@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinCentral - Extreme Accessibility (a11y) Financial Dashboard</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+              950: '#022c22',
+            }
+          },
+          animation: {
+            fadeIn: 'fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(4px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans, Noto Sans Devanagari, Noto Sans Kannada -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Noto+Sans+Kannada:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', 'Noto Sans Kannada', sans-serif;
+      background-color: #020617;
+      color: #f8fafc;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-emerald-500 selection:text-slate-950">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, createElement: h } = React;
+
+    // --- Lucide Icon Helper ---
+    function Icon({ name, className = "w-4 h-4", size = 16 }) {
+      const containerRef = useRef(null);
+      useEffect(() => {
+        if (containerRef.current && window.lucide) {
+          containerRef.current.innerHTML = '';
+          const iconObj = window.lucide.icons[name] || window.lucide.icons.Sparkles || window.lucide.icons.HelpCircle;
+          if (iconObj) {
+            const iconElement = window.lucide.createElement(iconObj);
+            iconElement.setAttribute('class', className);
+            iconElement.setAttribute('width', size);
+            iconElement.setAttribute('height', size);
+            containerRef.current.appendChild(iconElement);
+          }
+        }
+      }, [name, className, size]);
+
+      return <span ref={containerRef} className="inline-flex items-center justify-center flex-shrink-0" />;
+    }
+
+    // --- Hardcoded Multilingual Translations Dictionary (EN, HI, KN) ---
+    const TRANSLATIONS = {
+      en: {
+        langName: 'English',
+        bcp47: 'en-IN',
+        appTitle: 'FinCentral',
+        appBadge: 'Accessible Aggregator',
+        appTagline: 'Simple, Voice-Assisted Financial Dashboard',
+        networkOnline: 'Bank Network: 100% Active',
+        rbiCompliant: 'Government & RBI Approved',
+        verifiedUser: 'Chetan Surya (Verified)',
+        language: 'Language',
+        highContrast: 'High Contrast',
+        normalContrast: 'Normal View',
+        largeText: 'Large Text',
+        normalText: 'Normal Text',
+        voiceGuide: 'Audio Reader (TTS)',
+        voiceActive: 'Speaking...',
+        listenToScreen: 'Listen to this page',
+        listen: 'Listen',
+        stopAudio: 'Stop Audio',
+        home: 'Home',
+        reset: 'Start Over',
+
+        heroBadge: 'Safe & Simple Financial Hub for Everyone',
+        heroTitle: 'See All Your Money in One Safe Place',
+        heroDesc: 'Choose an account below. You can listen to any section using the voice button, or switch languages anytime.',
+        totalMoneyTracked: 'Total Money Tracked',
+        safeBanks: '32+ Trusted Banks',
+        voiceSupported: 'Voice in 3 Languages',
+        safeStorage: '100% Safe (No passwords saved)',
+
+        categoriesTitle: 'Choose What You Want to Check',
+        categoriesSubtitle: 'Click on any card below or press the voice button to hear about it.',
+
+        accounts: {
+          'savings': {
+            name: 'Savings Bank Account (Piggy Bank)',
+            shortName: 'Savings',
+            metaphor: 'Daily Money & Safe Savings',
+            tagline: 'Your money kept safely in bank accounts for daily expenses and family emergencies.',
+            badge: 'Safe Bank Deposit',
+            feature1: 'See your real balance in 1 click',
+            feature2: 'Get voice updates on your spending',
+            feature3: 'Safe emergency savings buffer',
+            actionBtn: 'Open Savings Section',
+            voiceText: 'Savings Bank Account. This is your daily safe money kept in the bank for expenses and emergencies.'
+          },
+          'mutual-funds': {
+            name: 'Mutual Funds (Growing Plant)',
+            shortName: 'Mutual Funds',
+            metaphor: 'Growing Wealth Basket',
+            tagline: 'Like planting a tree: your money is invested across India\'s 50 biggest companies to grow slowly and safely.',
+            badge: 'Long-Term Growth',
+            feature1: 'Basket of India\'s Top 50 companies',
+            feature2: 'Grows steadily year after year',
+            feature3: 'Very low charges, transparent growth',
+            actionBtn: 'Open Mutual Funds Section',
+            voiceText: 'Mutual Funds. Your money is invested across India\'s 50 biggest companies to grow steadily like a tree.'
+          },
+          'demat': {
+            name: 'Demat & Shares (Company Factory)',
+            shortName: 'Demat & Shares',
+            metaphor: 'Company Ownership',
+            tagline: 'Own small shares in companies like Tata, Reliance, and Infosys and track their daily values.',
+            badge: 'Shares & Stock Market',
+            feature1: 'See today vs yesterday share values',
+            feature2: 'Simple green/red profit alerts',
+            feature3: 'Listen to why share prices changed today',
+            actionBtn: 'Open Demat Shares Section',
+            voiceText: 'Demat and Shares. Own small pieces of big companies like Tata and Reliance, and track daily value changes with simple green and red colors.'
+          }
+        },
+
+        actionPromptTitle: 'What would you like to do?',
+        actionPromptSubtitle: 'You can connect an existing account or open a new one in simple steps.',
+        createTitle: 'Open / Create New Account',
+        createSub: 'Open a fresh account in 3 minutes with simple Aadhaar or Mobile verification.',
+        createBtn: 'Start Simple Registration ➔',
+        loginTitle: 'Connect Existing Account',
+        loginSub: 'Already have this account? Connect it securely to see your balance and AI summary.',
+        loginBtn: 'Connect & View Balance ➔',
+        backToDashboard: '⬅ Back to Main Screen',
+
+        digitalOnboarding: 'Simple Step-by-Step Registration',
+        secureLogin: 'Safe Bank Connection',
+        submitCreate: 'Confirm & Open Account ➔',
+        submitLogin: 'Connect to Aggregator ➔',
+        fullName: 'Your Full Name',
+        panNumber: 'PAN Card Number',
+        mobileNumber: 'Aadhaar Linked Mobile Number',
+        customerOrFolioId: 'Customer ID / Account ID',
+        secretPin: 'Secret Security PIN / Password',
+        termsConsent: 'I agree to safely connect my account (You can disconnect anytime).',
+        requiredField: 'This is required to proceed',
+        connectingText: 'Connecting safely to your bank...',
+
+        syncSuccess: 'Connected Successfully!',
+        syncSuccessMsg: 'Your financial information is now safely connected and summarized in plain language.',
+        tabAiInsights: '🤖 Easy AI Voice & Text Summary',
+        tabHoldings: '📋 Detailed Account List',
+        downloadPdf: 'Download Simple PDF Report',
+        consentActive: 'Connection Status: ACTIVE & SAFE',
+
+        savingsAI: {
+          trafficLightSafe: '🟢 Status: SAFE & HEALTHY',
+          trafficLightDesc: 'Your emergency money is well protected.',
+          balanceSpeech: 'You have 4 lakh 32 thousand 850 rupees in your bank. Your emergency fund has enough money to cover your family for 6 full months. Your spending went down this week, which is very good.',
+          balanceCardTitle: 'Your Available Bank Money',
+          balanceComment: 'You have enough savings to run your household for 6.8 months safely without any debt.',
+          recentSpendingTitle: 'Recent Money Spent',
+          spendingComment: 'You spent less on food and shopping this week compared to last week. Good job saving!',
+          cibilTitle: 'Bank Trust Score (CIBIL Score)',
+          cibilScoreDisplay: '765 out of 900 (Excellent)',
+          cibilMeaning: 'Banks trust you completely! You pay your bills on time, so banks will give you quick loans at cheap interest rates.',
+          cibilTip: 'Tip: Keep paying your electricity and card bills before the due date to reach an even higher score.'
+        },
+
+        mutualFundsAI: {
+          growthSummaryTitle: 'How Your Money is Growing',
+          analogyText: 'Think of your mutual fund like a fruit basket filled with India\'s 50 biggest companies (Tata, Reliance, Infosys). When these companies make profits, your money grows.',
+          navExplanation: '1 Basket Unit Cost: ₹ 212.85 | Annual Growth: +16.8% every year',
+          feeExplanation: 'Very Low Fee: Only ₹ 48 for every ₹ 10,000 invested (You save ₹ 5,660 per year compared to regular agents).',
+          allocationTitle: 'Where Your Money is Kept',
+          allocBig: '60% in Top 50 Big Companies (Safe & Steady)',
+          allocSafe: '30% in Government Reserve (Protected)',
+          allocFast: '10% in Fast Growing Small Companies (High Growth)',
+          riskLevelTitle: 'Safety & Risk Level',
+          riskLevelDesc: 'Medium Safe. Your money is protected by government bonds and won\'t drop easily during market dips.'
+        },
+
+        dematAI: {
+          todayVsYesterdayTitle: 'Today\'s Share Value vs Yesterday',
+          varianceGainText: '🟢 Your shares went UP by ₹ 24,150 today (+1.65% profit compared to yesterday)',
+          todayValuation: 'Today\'s Total Value: ₹ 14,82,600',
+          yesterdayValuation: 'Yesterday\'s Value: ₹ 14,58,450',
+          clickStockPrompt: 'Click on any company below to listen to why its price moved:',
+          stocks: {
+            'RELIANCE': {
+              plainTrend: 'Reliance: UP by +2.4% today',
+              voiceSummary: 'Reliance shares went up today because the company announced new green energy projects and high profits in its retail stores.',
+              simpleAdvice: 'Strong company with massive operations across petrol, Jio telecom, and retail stores.'
+            },
+            'TCS': {
+              plainTrend: 'Tata (TCS): Stable (+0.8%)',
+              voiceSummary: 'TCS shares are stable today. Tata won big new software contracts from banks in the United Kingdom.',
+              simpleAdvice: 'Very safe technology company with regular yearly cash dividend payments.'
+            },
+            'HDFCBANK': {
+              plainTrend: 'HDFC Bank: UP by +1.9% today',
+              voiceSummary: 'HDFC Bank shares climbed today because millions of people opened new deposits and took house loans.',
+              simpleAdvice: 'India\'s largest private bank with great stability and safety.'
+            },
+            'INFY': {
+              plainTrend: 'Infosys: UP by +1.2% today',
+              voiceSummary: 'Infosys shares gained value as global businesses signed new Artificial Intelligence software contracts.',
+              simpleAdvice: 'Leading global IT software exporter bringing foreign earnings into India.'
+            }
+          }
+        },
+
+        footerGovt: 'Approved by Reserve Bank of India (RBI) & SEBI for Citizen Financial Security.',
+        footerPrivacy: 'Zero Passwords Stored • 256-Bit Protection • Disconnect Anytime',
+        footerCopyright: '© 2026 FinCentral Accessible Financial Engine'
+      },
+
+      hi: {
+        langName: 'हिंदी',
+        bcp47: 'hi-IN',
+        appTitle: 'फिनसेंट्रल',
+        appBadge: 'सुलभ एग्रीगेटर',
+        appTagline: 'आसान, बोलकर समझाने वाला वित्तीय डैशबोर्ड',
+        networkOnline: 'बैंक नेटवर्क: 100% चालू',
+        rbiCompliant: 'सरकार एवं RBI द्वारा प्रमाणित',
+        verifiedUser: 'चेतन सूर्य (सत्यापित)',
+        language: 'भाषा',
+        highContrast: 'हाई कंट्रास्ट',
+        normalContrast: 'सामान्य दृश्य',
+        largeText: 'बड़े अक्षर',
+        normalText: 'सामान्य अक्षर',
+        voiceGuide: 'आवाज़ से सुनें',
+        voiceActive: 'बोल रहा है...',
+        listenToScreen: 'इस पेज को सुनें',
+        listen: 'सुनें',
+        stopAudio: 'आवाज़ रोकें',
+        home: 'होम',
+        reset: 'शुरुआत पर जाएं',
+
+        heroBadge: 'सभी नागरिकों के लिए आसान और सुरक्षित वित्तीय केंद्र',
+        heroTitle: 'अपने सभी बैंक और निवेश एक सुरक्षित जगह पर देखें',
+        heroDesc: 'नीचे से अपना खाता चुनें। आप किसी भी जानकारी को बोलकर सुनने के लिए आवाज़ बटन दबा सकते हैं।',
+        totalMoneyTracked: 'कुल ट्रैक किया गया धन',
+        safeBanks: '32+ भरोसेमंद बैंक',
+        voiceSupported: '3 भाषाओं में आवाज़ सुविधा',
+        safeStorage: '100% सुरक्षित (कोई पासवर्ड सेव नहीं होता)',
+
+        categoriesTitle: 'आप कौन सा खाता देखना चाहते हैं?',
+        categoriesSubtitle: 'नीचे दिए गए किसी भी कार्ड पर क्लिक करें या आवाज़ से सुनने के लिए स्पीकर बटन दबाएं।',
+
+        accounts: {
+          'savings': {
+            name: 'बचत बैंक खाता (गुल्लक)',
+            shortName: 'बचत खाता',
+            metaphor: 'रोजमर्रा का पैसा और गुल्लक',
+            tagline: 'घर के खर्चों और आपातकालीन सुरक्षा के लिए बैंक में रखा सुरक्षित पैसा।',
+            badge: 'सुरक्षित बैंक जमा',
+            feature1: '1 क्लिक में अपना असली बैलेंस देखें',
+            feature2: 'खर्चों की आसान बोलती जानकारी पाएं',
+            feature3: '6 महीने के घरेलू खर्च का सुरक्षित बैकअप',
+            actionBtn: 'बचत खाता खोलें',
+            voiceText: 'बचत बैंक खाता। यह आपका रोजमर्रा का सुरक्षित पैसा है जो घर के खर्चों और किसी आपात स्थिति के लिए बैंक में सुरक्षित रहता है।'
+          },
+          'mutual-funds': {
+            name: 'म्यूचुअल फंड्स (बढ़ता हुआ पौधा)',
+            shortName: 'म्यूचुअल फंड्स',
+            metaphor: 'पैसा बढ़ाने की टोकरी',
+            tagline: 'जैसे एक पौधा पेड़ बनता है: आपका पैसा भारत की 50 सबसे बड़ी कंपनियों में सुरक्षित रूप से बढ़ता है।',
+            badge: 'लंबी अवधि का विकास',
+            feature1: 'भारत की टॉप 50 बड़ी कंपनियों की टोकरी',
+            feature2: 'हर साल लगातार सुरक्षित मुनाफा',
+            feature3: 'बहुत कम शुल्क, पारदर्शी विकास',
+            actionBtn: 'म्यूचुअल फंड्स खोलें',
+            voiceText: 'म्यूचुअल फंड्स। आपका पैसा भारत की 50 सबसे बड़ी और भरोसेमंद कंपनियों में लगाया जाता है ताकि वह धीरे-धीरे पेड़ की तरह बढ़ सके।'
+          },
+          'demat': {
+            name: 'डीमैट और शेयर (कंपनी की हिस्सेदारी)',
+            shortName: 'डीमैट व शेयर',
+            metaphor: 'कंपनी की हिस्सेदारी',
+            tagline: 'टाटा, रिलायंस और इंफोसिस जैसी बड़ी कंपनियों में छोटी हिस्सेदारी रखें और रोज़ का नफ़ा-नुकसान देखें।',
+            badge: 'शेयर बाज़ार खाता',
+            feature1: 'आज और कल के भाव का सीधा मुकाबला',
+            feature2: 'सरल हरे और लाल रंग में नफ़े की सूचना',
+            feature3: 'शेयर का भाव क्यों बदला, बोलकर सुनें',
+            actionBtn: 'डीमैट शेयर खाता खोलें',
+            voiceText: 'डीमैट और शेयर। टाटा और रिलायंस जैसी दिग्गज कंपनियों में हिस्सेदारी रखें और देखें कि आज आपका फायदा हुआ या नुकसान।'
+          }
+        },
+
+        actionPromptTitle: 'आप आगे क्या करना चाहते हैं?',
+        actionPromptSubtitle: 'आप अपना पुराना खाता जोड़ सकते हैं या नया खाता बहुत आसानी से खोल सकते हैं।',
+        createTitle: 'नया खाता खोलें',
+        createSub: 'केवल आधार या मोबाइल नंबर से 3 मिनट में नया खाता शुरू करें।',
+        createBtn: 'सरल रजिस्ट्रेशन शुरू करें ➔',
+        loginTitle: 'मौजूदा खाता जोड़ें',
+        loginSub: 'क्या आपके पास पहले से यह खाता है? इसे जोड़ें और बैलेंस देखें।',
+        loginBtn: 'जोड़ें और बैलेंस देखें ➔',
+        backToDashboard: '⬅ मुख्य स्क्रीन पर लौटें',
+
+        digitalOnboarding: 'सरल चरण-दर-चरण रजिस्ट्रेशन',
+        secureLogin: 'सुरक्षित बैंक लॉगिन',
+        submitCreate: 'पुष्टि करें और खाता खोलें ➔',
+        submitLogin: 'बैंक से जोड़ें ➔',
+        fullName: 'आपका पूरा नाम',
+        panNumber: 'पैन कार्ड नंबर',
+        mobileNumber: 'आधार से जुड़ा मोबाइल नंबर',
+        customerOrFolioId: 'कस्टमर आईडी / खाता संख्या',
+        secretPin: 'गुप्त पिन / पासवर्ड',
+        termsConsent: 'मैं अपना खाता सुरक्षित रूप से जोड़ने की अनुमति देता हूँ (आप कभी भी हटा सकते हैं)।',
+        requiredField: 'आगे बढ़ने के लिए यह भरना आवश्यक है',
+        connectingText: 'आपके बैंक से सुरक्षित संपर्क हो रहा है...',
+
+        syncSuccess: 'खाता सफलतापूर्वक जुड़ गया!',
+        syncSuccessMsg: 'आपकी वित्तीय जानकारी अब सुरक्षित रूप से सरल भाषा में उपलब्ध है।',
+        tabAiInsights: '🤖 आसान AI आवाज़ और विश्लेषण',
+        tabHoldings: '📋 पूरी खाता सूची',
+        downloadPdf: 'सरल PDF रिपोर्ट डाउनलोड करें',
+        consentActive: 'कनेक्शन स्थिति: सक्रिय एवं सुरक्षित',
+
+        savingsAI: {
+          trafficLightSafe: '🟢 स्थिति: बिल्कुल सुरक्षित और मजबूत',
+          trafficLightDesc: 'आपका आपातकालीन पैसा पूरी तरह सुरक्षित है।',
+          balanceSpeech: 'आपके बैंक में कुल 4 लाख 32 हजार 850 रुपये हैं। आपके पास 6 महीने के पारिवारिक खर्च के लिए पर्याप्त सुरक्षित बचत है। इस हफ्ते आपका खर्च कम हुआ है, जो बहुत अच्छी बात है।',
+          balanceCardTitle: 'बैंक में उपलब्ध कुल रकम',
+          balanceComment: 'आपके पास बिना किसी कर्ज के 6.8 महीने तक घर चलाने के लिए पर्याप्त सुरक्षित बचत मौजूद है।',
+          recentSpendingTitle: 'हालिया खर्चों का हाल',
+          spendingComment: 'पिछले हफ्ते की तुलना में इस हफ्ते खाने-पीने और खरीदारी पर कम खर्च हुआ है। बहुत बढ़िया!',
+          cibilTitle: 'बैंक भरोसा स्कोर (CIBIL स्कोर)',
+          cibilScoreDisplay: '765 / 900 (बहुत शानदार)',
+          cibilMeaning: 'बैंक आप पर पूरा भरोसा करते हैं! आप समय पर बिल भरते हैं, इसलिए बैंक आपको बहुत कम ब्याज पर तुरंत लोन देंगे।',
+          cibilTip: 'सलाह: अपने बिजली और कार्ड के बिल समय से पहले भरते रहें ताकि आपका स्कोर 800 के पार पहुंच जाए।'
+        },
+
+        mutualFundsAI: {
+          growthSummaryTitle: 'आपका पैसा कैसे बढ़ रहा है',
+          analogyText: 'अपने म्यूचुअल फंड को फलों की एक टोकरी समझें जिसमें भारत की 50 सबसे बड़ी कंपनियाँ (टाटा, रिलायंस, इंफोसिस) शामिल हैं। जब ये कंपनियाँ मुनाफा कमाती हैं, आपका पैसा बढ़ता है।',
+          navExplanation: '1 टोकरी का भाव: ₹ 212.85 | सालाना विकास: हर साल +16.8% की बढ़ोतरी',
+          feeExplanation: 'बहुत कम शुल्क: हर ₹ 10,000 के निवेश पर केवल ₹ 48 खर्च (आप हर साल ₹ 5,660 की बचत कर रहे हैं)।',
+          allocationTitle: 'आपका पैसा कहाँ लगा है',
+          allocBig: '60% टॉप 50 बड़ी कंपनियों में (स्थिर और सुरक्षित)',
+          allocSafe: '30% सरकारी बचत में (100% सुरक्षित)',
+          allocFast: '10% तेजी से बढ़ने वाली कंपनियों में (अधिक मुनाफा)',
+          riskLevelTitle: 'सुरक्षा और जोखिम का स्तर',
+          riskLevelDesc: 'मध्यम सुरक्षित। आपका पैसा सरकारी बांड से सुरक्षित है और बाज़ार गिरने पर भी ज्यादा नहीं गिरेगा।'
+        },
+
+        dematAI: {
+          todayVsYesterdayTitle: 'आज के शेयर का भाव बनाम कल का भाव',
+          varianceGainText: '🟢 आज आपके शेयरों में ₹ 24,150 का मुनाफा हुआ (+1.65% की बढ़ोतरी कल के मुकाबले)',
+          todayValuation: 'आज का कुल मूल्य: ₹ 14,82,600',
+          yesterdayValuation: 'कल का मूल्य: ₹ 14,58,450',
+          clickStockPrompt: 'कंपनी का भाव क्यों बदला, यह सुनने के लिए नीचे किसी भी कंपनी पर क्लिक करें:',
+          stocks: {
+            'RELIANCE': {
+              plainTrend: 'रिलायंस शेयर: आज +2.4% ऊपर',
+              voiceSummary: 'रिलायंस के शेयर आज इसलिए बढ़े क्योंकि कंपनी ने नए ग्रीन एनर्जी प्रोजेक्ट और दुकानों में भारी मुनाफे की घोषणा की है।',
+              simpleAdvice: 'पेट्रोल, जियो टेलीकॉम और रिटेल स्टोर वाली भारत की सबसे विशाल कंपनी।'
+            },
+            'TCS': {
+              plainTrend: 'टाटा कंसल्टेंसी (TCS): स्थिर (+0.8%)',
+              voiceSummary: 'टीसीएस के शेयर आज स्थिर हैं। टाटा कंपनी को ब्रिटेन के बैंकों से बड़े नए सॉफ्टवेयर के काम मिले हैं।',
+              simpleAdvice: 'टाटा की बहुत सुरक्षित टेक्नोलॉजी कंपनी जो हर साल पक्का डिविडेंड देती है।'
+            },
+            'HDFCBANK': {
+              plainTrend: 'एचडीएफसी बैंक: आज +1.9% ऊपर',
+              voiceSummary: 'एचडीएफसी बैंक के शेयर आज ऊपर गए क्योंकि लाखों लोगों ने नए खाते खोले और घर खरीदने के लिए लोन लिया।',
+              simpleAdvice: 'भारत का सबसे बड़ा और सबसे सुरक्षित प्राइवेट बैंक।'
+            },
+            'INFY': {
+              plainTrend: 'इंफोसिस: आज +1.2% ऊपर',
+              voiceSummary: 'इंफोसिस के शेयरों में बढ़त हुई क्योंकि विदेशी कंपनियों ने नए आर्टिफिशियल इंटेलिजेंस सॉफ्टवेयर के सौदे किए हैं।',
+              simpleAdvice: 'दुनिया भर में भारत का नाम रोशन करने वाली दिग्गज सॉफ्टवेयर कंपनी।'
+            }
+          }
+        },
+
+        footerGovt: 'नागरिकों की वित्तीय सुरक्षा हेतु भारतीय रिज़र्व बैंक (RBI) और SEBI द्वारा प्रमाणित।',
+        footerPrivacy: 'कोई पासवर्ड सेव नहीं होता • 256-बिट सुरक्षा • जब चाहें तब हटाएं',
+        footerCopyright: '© 2026 फिनसेंट्रल सुलभ वित्तीय इंजन'
+      },
+
+      kn: {
+        langName: 'ಕನ್ನಡ',
+        bcp47: 'kn-IN',
+        appTitle: 'ಫಿನ್‌ಸೆಂಟ್ರಲ್',
+        appBadge: 'ಸರಳ ಆರ್ಥಿಕ ಕೇಂದ್ರ',
+        appTagline: 'ಎಲ್ಲರಿಗೂ ಅರ್ಥವಾಗುವ ಧ್ವನಿ ಆಧಾರಿತ ಹಣಕಾಸು ಮಾಹಿತಿ',
+        networkOnline: 'ಬ್ಯಾಂಕ್ ನೆಟ್‌ವರ್ಕ್: 100% ಸಕ್ರಿಯ',
+        rbiCompliant: 'ಸರ್ಕಾರ ಹಾಗೂ RBI ಮಾನ್ಯತೆ ಪಡೆದಿದೆ',
+        verifiedUser: 'ಚೇತನ್ ಸೂರ್ಯ (ದೃಢೀಕೃತ)',
+        language: 'ಭಾಷೆ',
+        highContrast: 'ಹೆಚ್ಚಿನ ಕಾಂಟ್ರಾಸ್ಟ್',
+        normalContrast: 'ಸಾಮಾನ್ಯ ನೋಟ',
+        largeText: 'ದೊಡ್ಡ ಅಕ್ಷರಗಳು',
+        normalText: 'ಸಾಮಾನ್ಯ ಅಕ್ಷರಗಳು',
+        voiceGuide: 'ಧ್ವನಿ ಓದುಗ',
+        voiceActive: 'ಮಾತನಾಡುತ್ತಿದೆ...',
+        listenToScreen: 'ಈ ಪುಟವನ್ನು ಆಲಿಸಿ',
+        listen: 'ಆಲಿಸಿ',
+        stopAudio: 'ಧ್ವನಿ ನಿಲ್ಲಿಸಿ',
+        home: 'ಮುಖಪುಟ',
+        reset: 'ಮೊದಲಿಗೆ ಹೋಗಿ',
+
+        heroBadge: 'ಸಾಮಾನ್ಯ ಜನರಿಗಾಗಿ ಅತ್ಯಂತ ಸರಳ ಮತ್ತು ಸುರಕ್ಷಿತ ಆರ್ಥಿಕ ತಾಣ',
+        heroTitle: 'ನಿಮ್ಮ ಎಲ್ಲಾ ಹಣದ ಲೆಕ್ಕವನ್ನು ಒಂದೇ ಜಾಗದಲ್ಲಿ ಸುರಕ್ಷಿತವಾಗಿ ನೋಡಿ',
+        heroDesc: 'ಕೆಳಗಿನ ಖಾತೆಗಳಲ್ಲಿ ಒಂದನ್ನು ಆಯ್ಕೆಮಾಡಿ. ಯಾವುದೇ ವಿವರವನ್ನು ಧ್ವನಿ ಮೂಲಕ ಕೇಳಲು ಸ್ಪೀಕರ್ ಬಟನ್ ಒತ್ತಿರಿ.',
+        totalMoneyTracked: 'ಒಟ್ಟು ಲೆಕ್ಕವಿರುವ ಹಣ',
+        safeBanks: '32+ ವಿಶ್ವಾಸಾರ್ಹ ಬ್ಯಾಂಕ್‌ಗಳು',
+        voiceSupported: '3 ಭಾಷೆಗಳಲ್ಲಿ ಧ್ವನಿ ಸೌಲಭ್ಯ',
+        safeStorage: '100% ಸುರಕ್ಷಿತ (ಯಾವುದೇ ಪಾಸ್‌ವರ್ಡ್ ಉಳಿಸುವುದಿಲ್ಲ)',
+
+        categoriesTitle: 'ನೀವು ಯಾವ ಖಾತೆಯನ್ನು ಪರಿಶೀಲಿಸಲು ಬಯಸುತ್ತೀರಿ?',
+        categoriesSubtitle: 'ಕೆಳಗಿನ ಕಾರ್ಡ್‌ಗಳ ಮೇಲೆ ಕ್ಲಿಕ್ ಮಾಡಿ ಅಥವಾ ಧ್ವನಿ ವಿವರ ಕೇಳಲು ಆಲಿಸಿ ಬಟನ್ ಒತ್ತಿರಿ.',
+
+        accounts: {
+          'savings': {
+            name: 'ಉಳಿತಾಯ ಬ್ಯಾಂಕ್ ಖಾತೆ (ಮುದ್ದು ಗಲ್ಲಾಪೆಟ್ಟಿಗೆ)',
+            shortName: 'ಉಳಿತಾಯ ಖಾತೆ',
+            metaphor: 'ದೈನಂದಿನ ಖರ್ಚಿನ ಹಣ',
+            tagline: 'ದೈನಂದಿನ ಖರ್ಚು ಮತ್ತು ತುರ್ತು ಕುಟುಂಬ ರಕ್ಷಣೆಗಾಗಿ ಬ್ಯಾಂಕಿನಲ್ಲಿ ಇಟ್ಟಿರುವ ಸುರಕ್ಷಿತ ಹಣ.',
+            badge: 'ಸುರಕ್ಷಿತ ಬ್ಯಾಂಕ್ ಹಣ',
+            feature1: '1 ಕ್ಲಿಕ್‌ನಲ್ಲಿ ನೈಜ ಬ್ಯಾಲೆನ್ಸ್ ಪರಿಶೀಲಿಸಿ',
+            feature2: 'ಖರ್ಚಿನ ವಿವರವನ್ನು ಧ್ವನಿ ಮೂಲಕ ಆಲಿಸಿ',
+            feature3: '6 ತಿಂಗಳ ಸಂಸಾರದ ಖರ್ಚಿಗೆ ಸುರಕ್ಷಿತ ಬ್ಯಾಕಪ್',
+            actionBtn: 'ಉಳಿತಾಯ ಖಾತೆ ತೆರೆಯಿರಿ',
+            voiceText: 'ಉಳಿತಾಯ ಬ್ಯಾಂಕ್ ಖಾತೆ. ಇದು ನಿಮ್ಮ ದಿನನಿತ್ಯದ ಖರ್ಚು ಮತ್ತು ತುರ್ತು ಪರಿಸ್ಥಿತಿಗಾಗಿ ಬ್ಯಾಂಕಿನಲ್ಲಿ ಇಟ್ಟಿರುವ ಸುರಕ್ಷಿತ ಹಣ.'
+          },
+          'mutual-funds': {
+            name: 'ಮ್ಯೂಚುಯಲ್ ಫಂಡ್ಸ್ (ಬೆಳೆಯುವ ಗಿಡ)',
+            shortName: 'ಮ್ಯೂಚುಯಲ್ ಫಂಡ್ಸ್',
+            metaphor: 'ಹಣ ಬೆಳೆಯುವ ಬುಟ್ಟಿ',
+            tagline: 'ಗಿಡ ಮರವಾಗುವಂತೆ: ನಿಮ್ಮ ಹಣ ಭಾರತದ 50 ಅತಿ ದೊಡ್ಡ ಕಂಪನಿಗಳಲ್ಲಿ ಹೂಡಿಕೆಯಾಗಿ ಸುರಕ್ಷಿತವಾಗಿ ಬೆಳೆಯುತ್ತದೆ.',
+            badge: 'ದೀರ್ಘಾವಧಿ ಲಾಭ',
+            feature1: 'ಭಾರತದ ಟಾಪ್ 50 ದೊಡ್ಡ ಕಂಪನಿಗಳ ಬುಟ್ಟಿ',
+            feature2: 'ಪ್ರತಿ ವರ್ಷ ನಿರಂತರವಾಗಿ ಬೆಳೆಯುವ ಲಾಭ',
+            feature3: 'ಅತಿ ಕಡಿಮೆ ಶುಲ್ಕ, ಪಾರದರ್ಶಕ ಬೆಳವಣಿಗೆ',
+            actionBtn: 'ಮ್ಯೂಚುಯಲ್ ಫಂಡ್ಸ್ ತೆರೆಯಿರಿ',
+            voiceText: 'ಮ್ಯೂಚುಯಲ್ ಫಂಡ್ಸ್. ನಿಮ್ಮ ಹಣವನ್ನು ಭಾರತದ 50 ಪ್ರಮುಖ ಕಂಪನಿಗಳಲ್ಲಿ ಹೂಡಿಕೆ ಮಾಡಲಾಗುತ್ತದೆ, ಅದು ಗಿಡದಂತೆ ಸುರಕ್ಷಿತವಾಗಿ ಬೆಳೆಯುತ್ತದೆ.'
+          },
+          'demat': {
+            name: 'ಡಿಮ್ಯಾಟ್ ಮತ್ತು ಷೇರುಗಳು (ಕಂಪನಿ ಪಾಲುದಾರಿಕೆ)',
+            shortName: 'ಡಿಮ್ಯಾಟ್ ಷೇರುಗಳು',
+            metaphor: 'ಕಂಪನಿ ಒಡೆತನ',
+            tagline: 'ಟಾಟಾ, ರಿಲಯನ್ಸ್ ಮತ್ತು ಇನ್ಫೋಸಿಸ್‌ನಂತಹ ದೊಡ್ಡ ಕಂಪನಿಗಳಲ್ಲಿ ಸಣ್ಣ ಪಾಲುದಾರಿಕೆ ಹೊಂದಿ ದೈನಂದಿನ ಬೆಲೆ ಬದಲಾವಣೆ ನೋಡಿ.',
+            badge: 'ಷೇರು ಮಾರುಕಟ್ಟೆ ಖಾತೆ',
+            feature1: 'ಇವತ್ತಿನ ಮತ್ತು ನಿನ್ನೆಯ ಬೆಲೆಗಳ ಹೋಲಿಕೆ',
+            feature2: 'ಸರಳ ಹಸಿರು ಮತ್ತು ಕೆಂಪು ಬಣ್ಣದಲ್ಲಿ ಲಾಭದ ಮಾಹಿತಿ',
+            feature3: 'ಷೇರು ಬೆಲೆ ಏಕೆ ಬದಲಾಯಿತು ಎಂದು ಧ್ವನಿಯಲ್ಲಿ ಕೇಳಿ',
+            actionBtn: 'ಡಿಮ್ಯಾಟ್ ಷೇರು ಖಾತೆ ತೆರೆಯಿರಿ',
+            voiceText: 'ಡಿಮ್ಯಾಟ್ ಮತ್ತು ಷೇರುಗಳು. ಟಾಟಾ ಮತ್ತು ರಿಲಯನ್ಸ್‌ನಂತಹ ದೊಡ್ಡ ಕಂಪನಿಗಳಲ್ಲಿ ಸಣ್ಣ ಪಾಲು ಪಡೆಯಿರಿ ಮತ್ತು ದಿನದ ಲಾಭ-ನಷ್ಟವನ್ನು ಸರಳ ಬಣ್ಣಗಳಲ್ಲಿ ನೋಡಿ.'
+          }
+        },
+
+        actionPromptTitle: 'ನೀವು ಮುಂದೆ ಏನು ಮಾಡಲು ಬಯಸುತ್ತೀರಿ?',
+        actionPromptSubtitle: 'ನೀವು ಈಗಾಗಲೇ ಇರುವ ಖಾತೆಯನ್ನು ಲಿಂಕ್ ಮಾಡಬಹುದು ಅಥವಾ ಹೊಸ ಖಾತೆಯನ್ನು ತೆರೆಯಬಹುದು.',
+        createTitle: 'ಹೊಸ ಖಾತೆ ತೆರೆಯಿರಿ',
+        createSub: 'ಕೇವಲ ಆಧಾರ್ ಅಥವಾ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯಿಂದ 3 ನಿಮಿಷಗಳಲ್ಲಿ ಹೊಸ ಖಾತೆ ಆರಂಭಿಸಿ.',
+        createBtn: 'ಸರಳ ನೋಂದಣಿ ಆರಂಭಿಸಿ ➔',
+        loginTitle: 'ಈಗಾಗಲೇ ಇರುವ ಖಾತೆ ಜೋಡಿಸಿ',
+        loginSub: 'ನಿಮಗೆ ಈ ಖಾತೆ ಈಗಾಗಲೇ ಇದೆಯೇ? ಸುಲಭವಾಗಿ ಜೋಡಿಸಿ ಬ್ಯಾಲೆನ್ಸ್ ನೋಡಿ.',
+        loginBtn: 'ಜೋಡಿಸಿ ಬ್ಯಾಲೆನ್ಸ್ ನೋಡಿ ➔',
+        backToDashboard: '⬅ ಮುಖ್ಯ ಪುಟಕ್ಕೆ ಹಿಂತಿರುಗಿ',
+
+        digitalOnboarding: 'ಸರಳ ಹಂತ-ಹಂತದ ನೋಂದಣಿ',
+        secureLogin: 'ಸುರಕ್ಷಿತ ಬ್ಯಾಂಕ್ ಲಾಗಿನ್',
+        submitCreate: 'ಖಚಿತಪಡಿಸಿ ಖಾತೆ ತೆರೆಯಿರಿ ➔',
+        submitLogin: 'ಬ್ಯಾಂಕ್‌ಗೆ ಜೋಡಿಸಿ ➔',
+        fullName: 'ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು',
+        panNumber: 'ಪ್ಯಾನ್ ಕಾರ್ಡ್ ಸಂಖ್ಯೆ',
+        mobileNumber: 'ಆಧಾರ್ ಲಿಂಕ್ ಆದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ',
+        customerOrFolioId: 'ಗ್ರಾಹಕರ ಐಡಿ / ಖಾತೆ ಸಂಖ್ಯೆ',
+        secretPin: 'ರಹಸ್ಯ ಪಿನ್ / ಪಾಸ್‌ವರ್ಡ್',
+        termsConsent: 'ನನ್ನ ಖಾತೆಯನ್ನು ಸುರಕ್ಷಿತವಾಗಿ ಜೋಡಿಸಲು ಒಪ್ಪುತ್ತೇನೆ (ಯಾವಾಗ ಬೇಕಾದರೂ ತೆಗೆದುಹಾಕಬಹುದು).',
+        requiredField: 'ಮುಂದೆ ಹೋಗಲು ಇದನ್ನು ಭರ್ತಿ ಮಾಡುವುದು ಕಡ್ಡಾಯ',
+        connectingText: 'ಬ್ಯಾಂಕ್ ಜೊತೆ ಸುರಕ್ಷಿತ ಸಂಪರ್ಕ ಸಾಧಿಸಲಾಗುತ್ತಿದೆ...',
+
+        syncSuccess: 'ಖಾತೆ ಯಶಸ್ವಿಯಾಗಿ ಜೋಡಣೆಯಾಗಿದೆ!',
+        syncSuccessMsg: 'ನಿಮ್ಮ ಹಣಕಾಸಿನ ಮಾಹಿತಿ ಈಗ ಸುರಕ್ಷಿತವಾಗಿ ಕನ್ನಡದಲ್ಲಿ ಲಭ್ಯವಿದೆ.',
+        tabAiInsights: '🤖 ಸರಳ AI ಧ್ವನಿ ಮತ್ತು ಮುನ್ಸೂಚನೆ',
+        tabHoldings: '📋 ಸಂಪೂರ್ಣ ಖಾತೆ ವಿವರ ಪಟ್ಟಿ',
+        downloadPdf: 'ಸರಳ PDF ವರದಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ',
+        consentActive: 'ಸಂಪರ್ಕ ಸ್ಥಿತಿ: ಸಕ್ರಿಯ ಮತ್ತು ಸುರಕ್ಷಿತ',
+
+        savingsAI: {
+          trafficLightSafe: '🟢 ಸ್ಥಿತಿ: ಅತ್ಯಂತ ಸುರಕ್ಷಿತ ಮತ್ತು ಸದೃಢ',
+          trafficLightDesc: 'ನಿಮ್ಮ ತುರ್ತು ನಿಧಿಯ ಹಣ ಸಂಪೂರ್ಣ ರಕ್ಷಿತವಾಗಿದೆ.',
+          balanceSpeech: 'ನಿಮ್ಮ ಬ್ಯಾಂಕಿನಲ್ಲಿ ಒಟ್ಟು 4 ಲಕ್ಷದ 32 ಸಾವಿರದ 850 ರೂಪಾಯಿಗಳಿವೆ. ನಿಮ್ಮ ಬಳಿ ಮುಂದಿನ 6 ತಿಂಗಳ ಕುಟುಂಬದ ಖರ್ಚಿಗೆ ಸಾಕಾಗುವಷ್ಟು ಸುರಕ್ಷಿತ ಹಣವಿದೆ. ಈ ವಾರ ನಿಮ್ಮ ಖರ್ಚು ಕಡಿಮೆಯಾಗಿದೆ, ಇದು ಉತ್ತಮ ಸಂಗತಿ.',
+          balanceCardTitle: 'ಬ್ಯಾಂಕಿನಲ್ಲಿ ಲಭ್ಯವಿರುವ ಒಟ್ಟು ಹಣ',
+          balanceComment: 'ಯಾವುದೇ ಸಾಲವಿಲ್ಲದೆ 6.8 ತಿಂಗಳು ಸಂಸಾರ ನಡೆಸಲು ನಿಮ್ಮ ಬಳಿ ಸಾಕಷ್ಟು ಉಳಿತಾಯ ಹಣವಿದೆ.',
+          recentSpendingTitle: 'ಇತ್ತೀಚಿನ ಖರ್ಚುಗಳ ವಿವರ',
+          spendingComment: 'ಕಳೆದ ವಾರಕ್ಕೆ ಹೋಲಿಸಿದರೆ ಈ ವಾರ ಊಟ ಮತ್ತು ಶಾಪಿಂಗ್ ಖರ್ಚು 12% ಕಡಿಮೆಯಾಗಿದೆ. ಅಭಿನಂದನೆಗಳು!',
+          cibilTitle: 'ಬ್ಯಾಂಕ್ ನಂಬಿಕೆ ಸ್ಕೋರ್ (CIBIL ಸ್ಕೋರ್)',
+          cibilScoreDisplay: '765 / 900 (ಅತ್ಯುತ್ತಮ)',
+          cibilMeaning: 'ಬ್ಯಾಂಕ್‌ಗಳು ನಿಮ್ಮ ಮೇಲೆ ಸಂಪೂರ್ಣ ನಂಬಿಕೆ ಇಟ್ಟಿವೆ! ನೀವು ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ಬಿಲ್ ಪಾವತಿಸುವುದರಿಂದ ಬ್ಯಾಂಕ್‌ಗಳು ಕಡಿಮೆ ಬಡ್ಡಿಗೆ ತಕ್ಷಣ ಸಾಲ ನೀಡುತ್ತವೆ.',
+          cibilTip: 'ಸಲಹೆ: ಕರೆಂಟ್ ಬಿಲ್ ಮತ್ತು ಕ್ರೆಡಿಟ್ ಕಾರ್ಡ್ ಹಣವನ್ನು ದಿನಾಂಕ ಮುಗಿಯುವ ಮುನ್ನ ಕಟ್ಟುವುದು ಮುಂದುವರಿಸಿ.'
+        },
+
+        mutualFundsAI: {
+          growthSummaryTitle: 'ನಿಮ್ಮ ಹಣ ಹೇಗೆ ಬೆಳೆಯುತ್ತಿದೆ',
+          analogyText: 'ನಿಮ್ಮ ಮ್ಯೂಚುಯಲ್ ಫಂಡನ್ನು ಹಣ್ಣಿನ ಬುಟ್ಟಿಯಂತೆ ಕಲ್ಪಿಸಿಕೊಳ್ಳಿ, ಅದರಲ್ಲಿ ಭಾರತದ ಟಾಪ್ 50 ದೊಡ್ಡ ಕಂಪನಿಗಳು (ಟಾಟಾ, ರಿಲಯನ್ಸ್, ಇನ್ಫೋಸಿಸ್) ಇವೆ. ಆ ಕಂಪನಿಗಳು ಲಾಭ ಮಾಡಿದಾಗ ನಿಮ್ಮ ಹಣ ಬೆಳೆಯುತ್ತದೆ.',
+          navExplanation: '1 ಬುಟ್ಟಿಯ ಬೆಲೆ: ₹ 212.85 | ವಾರ್ಷಿಕ ಲಾಭ: ಪ್ರತಿ ವರ್ಷ +16.8% ಹೆಚ್ಚಳ',
+          feeExplanation: 'ಅತಿ ಕಡಿಮೆ ಶುಲ್ಕ: ಪ್ರತಿ ₹ 10,000 ಹೂಡಿಕೆಗೆ ಕೇವಲ ₹ 48 ಖರ್ಚು (ನೀವು ವಾರ್ಷಿಕ ₹ 5,660 ಉಳಿಸುತ್ತಿದ್ದೀರಿ).',
+          allocationTitle: 'ನಿಮ್ಮ ಹಣ ಎಲ್ಲೆಲ್ಲಿ ಹೂಡಿಕೆಯಾಗಿದೆ',
+          allocBig: '60% ಟಾಪ್ 50 ದೊಡ್ಡ ಕಂಪನಿಗಳಲ್ಲಿ (ಸುರಕ್ಷಿತ ಮತ್ತು ಸ್ಥಿರ)',
+          allocSafe: '30% ಸರ್ಕಾರಿ ಉಳಿತಾಯದಲ್ಲಿ (100% ಗ್ಯಾರಂಟಿ)',
+          allocFast: '10% ವೇಗವಾಗಿ ಬೆಳೆಯುವ ಕಂಪನಿಗಳಲ್ಲಿ (ಹೆಚ್ಚಿನ ಲಾಭ)',
+          riskLevelTitle: 'ಸುರಕ್ಷತೆ ಮತ್ತು ರಿಸ್ಕ್ ಮಟ್ಟ',
+          riskLevelDesc: 'ಮಧ್ಯಮ ಸುರಕ್ಷಿತ. ಸರ್ಕಾರಿ ಬಾಂಡ್‌ಗಳಿರುವುದರಿಂದ ಮಾರುಕಟ್ಟೆ ಇಳಿದರೂ ನಿಮ್ಮ ಹಣ ಹೆಚ್ಚು ಇಳಿಯುವುದಿಲ್ಲ.'
+        },
+
+        dematAI: {
+          todayVsYesterdayTitle: 'ಇವತ್ತಿನ ಷೇರು ಬೆಲೆ vs ನಿನ್ನೆಯ ಬೆಲೆ',
+          varianceGainText: '🟢 ಇಂದು ನಿಮ್ಮ ಷೇರುಗಳಲ್ಲಿ ₹ 24,150 ರೂಪಾಯಿ ಲಾಭವಾಗಿದೆ (+1.65% ಹೆಚ್ಚಳ)',
+          todayValuation: 'ಇವತ್ತಿನ ಒಟ್ಟು ಮೌಲ್ಯ: ₹ 14,82,600',
+          yesterdayValuation: 'ನಿನ್ನೆಯ ಮೌಲ್ಯ: ₹ 14,58,450',
+          clickStockPrompt: 'ಕಂಪನಿಯ ಷೇರು ಬೆಲೆ ಏಕೆ ಬದಲಾಯಿತು ಎಂದು ಧ್ವನಿಯಲ್ಲಿ ಕೇಳಲು ಕೆಳಗೆ ಕ್ಲಿಕ್ ಮಾಡಿ:',
+          stocks: {
+            'RELIANCE': {
+              plainTrend: 'ರಿಲಯನ್ಸ್: ಇಂದು +2.4% ಹೆಚ್ಚಳ',
+              voiceSummary: 'ರಿಲಯನ್ಸ್ ಷೇರು ಇಂದು ಏರಿಕೆಯಾಗಿದೆ ಏಕೆಂದರೆ ಕಂಪನಿಯು ಹೊಸ ಹಸಿರು ಇಂಧನ ಯೋಜನೆಗಳನ್ನು ಮತ್ತು ಸೂಪರ್ ಮಾರ್ಕೆಟ್‌ಗಳಲ್ಲಿ ಭಾರಿ ಲಾಭವನ್ನು ಪ್ರಕಟಿಸಿದೆ.',
+              simpleAdvice: 'ಪೆಟ್ರೋಲ್, ಜಿಯೋ ಮೊಬೈಲ್ ಮತ್ತು ರಿಟೇಲ್ ಅಂಗಡಿಗಳಿರುವ ಭಾರತದ ಅತಿ ದೊಡ್ಡ ಕಂಪನಿ.'
+            },
+            'TCS': {
+              plainTrend: 'ಟಾಟಾ (TCS): ಸ್ಥಿರ (+0.8%)',
+              voiceSummary: 'ಟಿಸಿಎಸ್ ಷೇರು ಇಂದು ಸ್ಥಿರವಾಗಿದೆ. ಟಾಟಾ ಕಂಪನಿಗೆ ಬ್ರಿಟನ್ ಬ್ಯಾಂಕ್‌ಗಳಿಂದ ದೊಡ್ಡ ಸಾಫ್ಟ್‌ವೇರ್ ಕೆಲಸಗಳು ದೊರೆತಿವೆ.',
+              simpleAdvice: 'ಪ್ರತಿ ವರ್ಷ ಖಚಿತ ಡಿವಿಡೆಂಡ್ ನೀಡುವ ಟಾಟಾ ಸಮೂಹದ ಅತ್ಯಂತ ಸುರಕ್ಷಿತ ಟೆಕ್ ಕಂಪನಿ.'
+            },
+            'HDFCBANK': {
+              plainTrend: 'ಹೆಚ್‌ಡಿಎಫ್‌ಸಿ ಬ್ಯಾಂಕ್: ಇಂದು +1.9% ಹೆಚ್ಚಳ',
+              voiceSummary: 'ಹೆಚ್‌ಡಿಎಫ್‌ಸಿ ಬ್ಯಾಂಕ್ ಷೇರು ಇಂದು ಮೇಲಕ್ಕೆ ಹೋಗಿದೆ ಏಕೆಂದರೆ ಲಕ್ಷಾಂತರ ಜನರು ಹೊಸ ಠೇವಣಿಗಳನ್ನು ಇಟ್ಟು ಮನೆ ಸಾಲ ಪಡೆದಿದ್ದಾರೆ.',
+              simpleAdvice: 'ಭಾರತದ ಅತಿ ದೊಡ್ಡ ಮತ್ತು ಸುರಕ್ಷಿತ ಖಾಸಗಿ ಬ್ಯಾಂಕ್.'
+            },
+            'INFY': {
+              plainTrend: 'ಇನ್ಫೋಸಿಸ್: ಇಂದು +1.2% ಹೆಚ್ಚಳ',
+              voiceSummary: 'ಇನ್ಫೋಸಿಸ್ ಷೇರು ಏರಿಕೆಯಾಗಿದೆ ಏಕೆಂದರೆ ವಿದೇಶಿ ಕಂಪನಿಗಳು ಹೊಸ ಕೃತಕ ಬುದ್ಧಿಮತ್ತೆ ಸಾಫ್ಟ್‌ವೇರ್ ಒಪ್ಪಂದಗಳನ್ನು ಮಾಡಿಕೊಂಡಿವೆ.',
+              simpleAdvice: 'ಜಗತ್ತಿನಾದ್ಯಂತ ಭಾರತದ ಹೆಗ್ಗಳಿಕೆ ತಂದಿರುವ ಮುಂಚೂಣಿ ಸಾಫ್ಟ್‌ವೇರ್ ರಫ್ತು ಕಂಪನಿ.'
+            }
+          }
+        },
+
+        footerGovt: 'ನಾಗರಿಕರ ಆರ್ಥಿಕ ಸುರಕ್ಷತೆಗಾಗಿ ಭಾರತೀಯ ರಿಸರ್ವ್ ಬ್ಯಾಂಕ್ (RBI) ಮತ್ತು SEBI ಯಿಂದ ಅನುಮೋದಿತವಾಗಿದೆ.',
+        footerPrivacy: 'ಯಾವುದೇ ಪಾಸ್‌ವರ್ಡ್ ಉಳಿಸುವುದಿಲ್ಲ • 256-ಬಿಟ್ ರಕ್ಷಣೆ • ಯಾವಾಗ ಬೇಕಾದರೂ ಸಂಪರ್ಕ ಕಡಿತಗೊಳಿಸಿ',
+        footerCopyright: '© 2026 ಫಿನ್‌ಸೆಂಟ್ರಲ್ ಸರಳ ಆರ್ಥಿಕ ವೇದಿಕೆ'
+      }
+    };
+
+    const ACCOUNT_TYPES = [
+      {
+        id: 'mutual-funds',
+        name: 'Mutual Funds Account',
+        iconName: 'Sprout',
+        accentColor: 'emerald',
+        badge: 'Long-Term Growth',
+        mockPortfolio: {
+          accountBalance: '₹ 8,45,210.40',
+          change24h: '+ ₹ 12,340 (+1.48%)',
+          linkedInstitutions: ['HDFC Mutual Fund', 'ICICI Prudential AMC', 'SBI Mutual Fund', 'Nippon India AMC'],
+          holdings: [
+            { name: 'Nifty 50 Top Companies Basket', units: '342.18 units', nav: '₹ 248.50', value: '₹ 85,031', gain: '+18.4%' },
+            { name: 'Flexi Cap Growth Basket', units: '680.50 units', nav: '₹ 112.40', value: '₹ 76,488', gain: '+22.1%' },
+            { name: 'Bluechip Equity Basket', units: '450.00 units', nav: '₹ 385.10', value: '₹ 1,73,295', gain: '+15.7%' }
+          ]
+        }
+      },
+      {
+        id: 'demat',
+        name: 'Demat Account',
+        iconName: 'Factory',
+        accentColor: 'blue',
+        badge: 'CDSL / NSDL Compliant',
+        mockPortfolio: {
+          accountBalance: '₹ 14,82,600.00',
+          change24h: '+ ₹ 24,150 (+1.65%)',
+          linkedInstitutions: ['Zerodha Broking', 'Groww Invest Tech', 'CDSL Depository Services'],
+          holdings: [
+            { name: 'Reliance Industries Ltd.', ticker: 'RELIANCE', units: '85 Shares', nav: '₹ 2,980.00', value: '₹ 2,53,300', gain: '+14.2%' },
+            { name: 'Tata Consultancy Services', ticker: 'TCS', units: '40 Shares', nav: '₹ 4,120.00', value: '₹ 1,64,800', gain: '+9.8%' },
+            { name: 'HDFC Bank Ltd.', ticker: 'HDFCBANK', units: '120 Shares', nav: '₹ 1,650.00', value: '₹ 1,98,000', gain: '+12.4%' },
+            { name: 'Infosys Limited', ticker: 'INFY', units: '110 Shares', nav: '₹ 1,780.00', value: '₹ 1,95,800', gain: '+21.5%' }
+          ]
+        }
+      },
+      {
+        id: 'savings',
+        name: 'Savings Account',
+        iconName: 'Landmark',
+        accentColor: 'indigo',
+        badge: 'RBI AA Framework',
+        mockPortfolio: {
+          accountBalance: '₹ 4,32,850.75',
+          change24h: 'Monthly Interest: + ₹ 1,420',
+          linkedInstitutions: ['HDFC Bank (Primary)', 'State Bank of India', 'ICICI Bank'],
+          holdings: [
+            { name: 'Primary Bank Savings A/c (..4502)', units: 'Daily Available', nav: '3.5% p.a.', value: '₹ 2,15,400', gain: 'Active' },
+            { name: 'Digital Savings A/c (..8910)', units: 'Daily Available', nav: '3.0% p.a.', value: '₹ 67,450', gain: 'Active' },
+            { name: 'Fixed Deposit (Emergency Buffer)', units: 'Safe Reserve', nav: '7.1% p.a.', value: '₹ 1,50,000', gain: 'Locked' }
+          ]
+        }
+      }
+    ];
+
+    const SYSTEM_STATS = {
+      totalAssetsTracked: '₹ 27,60,661.15',
+      connectedAccounts: 3,
+      aggregatorStatus: 'Operational',
+      encryptionStandard: 'AES-256 GCM'
+    };
+
+    // --- Web Speech API Hook ---
+    function useTTS(currentLang) {
+      const [isSpeaking, setIsSpeaking] = useState(false);
+
+      const getBCP47Tag = (lang) => {
+        if (lang === 'hi') return 'hi-IN';
+        if (lang === 'kn') return 'kn-IN';
+        return 'en-IN';
+      };
+
+      const stop = () => {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          setIsSpeaking(false);
+        }
+      };
+
+      const speak = (text, langOverride) => {
+        if (!text || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+
+        const targetLang = langOverride || currentLang;
+        const bcp47 = getBCP47Tag(targetLang);
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = bcp47;
+        utterance.rate = targetLang === 'en' ? 0.95 : 0.9;
+
+        const voices = window.speechSynthesis.getVoices();
+        const matchingVoice = voices.find(v => v.lang === bcp47 || v.lang.startsWith(targetLang));
+        if (matchingVoice) utterance.voice = matchingVoice;
+
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+
+        window.speechSynthesis.speak(utterance);
+      };
+
+      useEffect(() => {
+        return () => {
+          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        };
+      }, [currentLang]);
+
+      return { speak, stop, isSpeaking };
+    }
+
+    // --- Component: Navbar ---
+    function Navbar({ 
+      currentLang, 
+      onSelectLang, 
+      translations, 
+      highContrast, 
+      onToggleContrast,
+      largeText,
+      onToggleLargeText,
+      isSpeaking,
+      onTriggerGlobalTTS,
+      onStopTTS,
+      onReset 
+    }) {
+      const t = translations;
+      const languages = [
+        { code: 'en', label: 'English' },
+        { code: 'hi', label: 'हिंदी' },
+        { code: 'kn', label: 'ಕನ್ನಡ' }
+      ];
+
+      return (
+        <header className={`w-full sticky top-0 z-40 transition-colors border-b ${
+          highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-slate-950/95 border-slate-800 text-slate-100 backdrop-blur-md'
+        }`}>
+          <div className={`px-4 sm:px-8 py-2 border-b text-xs flex flex-wrap items-center justify-between gap-3 ${
+            highContrast ? 'bg-amber-400 text-black font-bold border-black' : 'bg-slate-900/80 border-slate-800/80 text-slate-300'
+          }`}>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>{t.networkOnline}</span>
+              </div>
+              <span className="hidden sm:inline">•</span>
+              <div className="hidden sm:flex items-center gap-1">
+                <Icon name="ShieldCheck" className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{t.rbiCompliant}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => isSpeaking ? onStopTTS() : onTriggerGlobalTTS()}
+                className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                  isSpeaking
+                    ? 'bg-rose-600 text-white ring-2 ring-rose-400 animate-pulse'
+                    : highContrast
+                      ? 'bg-black text-amber-300 border-2 border-black hover:bg-zinc-900'
+                      : 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-600/30'
+                }`}
+              >
+                <Icon name={isSpeaking ? "VolumeX" : "Volume2"} className="w-3.5 h-3.5" />
+                <span>{isSpeaking ? t.stopAudio : t.voiceGuide}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onToggleContrast}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                  highContrast ? 'bg-black text-yellow-300 border-2 border-yellow-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                }`}
+              >
+                <Icon name="Eye" className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{highContrast ? t.normalContrast : t.highContrast}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onToggleLargeText}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                  largeText ? 'bg-emerald-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                }`}
+              >
+                <Icon name="Type" className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{largeText ? t.normalText : t.largeText}</span>
+              </button>
+
+              {/* Language Switcher */}
+              <div className="flex items-center p-0.5 rounded-lg bg-slate-950 border border-slate-700">
+                <Icon name="Globe" className="w-3.5 h-3.5 text-slate-400 ml-1.5 mr-0.5 hidden sm:inline" />
+                {languages.map(lang => {
+                  const isActive = currentLang === lang.code;
+                  return (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => onSelectLang(lang.code)}
+                      className={`px-2.5 py-0.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                        isActive
+                          ? highContrast
+                            ? 'bg-yellow-400 text-black shadow'
+                            : 'bg-emerald-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
+            <div onClick={onReset} className="flex items-center gap-3 cursor-pointer group select-none">
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center p-2.5 transition-transform group-hover:scale-105 ${
+                highContrast ? 'bg-yellow-400 text-black border-2 border-yellow-300' : 'bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 text-slate-950 shadow-lg'
+              }`}>
+                <Icon name="Layers" className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xl font-extrabold tracking-tight ${highContrast ? 'text-yellow-300' : 'text-white'}`}>
+                    {t.appTitle}
+                  </span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                    highContrast ? 'bg-yellow-400 text-black' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                  }`}>
+                    {t.appBadge}
+                  </span>
+                </div>
+                <p className={`text-xs ${highContrast ? 'text-yellow-200' : 'text-slate-400'}`}>
+                  {t.appTagline}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onReset}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  highContrast ? 'bg-yellow-400 text-black font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                }`}
+              >
+                <Icon name="RefreshCw" className="w-3.5 h-3.5" />
+                <span>{t.reset}</span>
+              </button>
+
+              <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-slate-800 text-xs">
+                <div className="w-8 h-8 rounded-full bg-emerald-900/60 border border-emerald-500/50 flex items-center justify-center font-bold text-emerald-300">
+                  CS
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-200">{t.verifiedUser}</p>
+                  <p className="text-[10px] text-emerald-400">KYC Verified</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    // --- Component: Breadcrumbs ---
+    function Breadcrumbs({ route, accountId, translations, onNavigate, onSpeak, highContrast }) {
+      const t = translations;
+
+      const crumbs = [
+        {
+          id: 'home',
+          label: t.home,
+          iconName: 'Home',
+          target: { view: 'home', accountId: null, action: null },
+          isActive: route.view === 'home'
+        }
+      ];
+
+      if (accountId && route.view !== 'home') {
+        const accTrans = t.accounts[accountId];
+        const accountLabel = accTrans ? accTrans.name : accountId;
+        crumbs.push({
+          id: 'account',
+          label: accountLabel,
+          target: { view: 'account', accountId: accountId, action: null },
+          isActive: route.view === 'account'
+        });
+      }
+
+      if (route.action && (route.view === 'auth' || route.view === 'summary')) {
+        const actionLabel = route.action === 'create' ? t.createTitle : t.loginTitle;
+        crumbs.push({
+          id: 'action',
+          label: actionLabel,
+          target: { view: 'auth', accountId: route.accountId, action: route.action },
+          isActive: route.view === 'auth'
+        });
+      }
+
+      if (route.view === 'summary') {
+        crumbs.push({
+          id: 'summary',
+          label: t.tabAiInsights,
+          target: { view: 'summary', accountId: route.accountId, action: route.action },
+          isActive: true
+        });
+      }
+
+      const breadcrumbSpeech = crumbs.map(c => c.label).join(' ➔ ');
+
+      return (
+        <nav 
+          aria-label="Breadcrumb Navigation"
+          className={`w-full px-4 sm:px-8 py-3 sticky top-28 z-30 transition-all border-b ${
+            highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-slate-900/90 backdrop-blur-md border-slate-800/80'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <ol className="flex items-center flex-wrap gap-2 text-sm sm:text-base font-semibold">
+              {crumbs.map((crumb, index) => {
+                const isLast = index === crumbs.length - 1;
+
+                return (
+                  <li key={crumb.id} className="flex items-center">
+                    {index > 0 && (
+                      <span className={`mx-2 text-base font-bold flex-shrink-0 ${
+                        highContrast ? 'text-yellow-400' : 'text-emerald-400'
+                      }`} aria-hidden="true">
+                        ➔
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onNavigate(crumb.target)}
+                      className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                        isLast
+                          ? highContrast
+                            ? 'bg-yellow-400 text-black font-extrabold ring-2 ring-yellow-300'
+                            : 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40 shadow-sm'
+                          : highContrast
+                            ? 'text-yellow-200 hover:text-white hover:bg-zinc-800 underline'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/90'
+                      }`}
+                    >
+                      {crumb.iconName && <Icon name={crumb.iconName} className="w-4 h-4 flex-shrink-0" />}
+                      <span>{crumb.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+
+            <button
+              type="button"
+              onClick={() => onSpeak(breadcrumbSpeech)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                highContrast ? 'bg-yellow-400 text-black' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+              }`}
+            >
+              <Icon name="Volume2" className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t.listen}</span>
+            </button>
+          </div>
+        </nav>
+      );
+    }
+
+    // --- Component: AccountCard ---
+    function AccountCard({ account, translations, onSelect, onSpeak, highContrast }) {
+      const t = translations;
+      const accTrans = t.accounts[account.id] || {};
+
+      const iconNames = {
+        'savings': 'Landmark',
+        'mutual-funds': 'Sprout',
+        'demat': 'Factory'
+      };
+
+      const themeStyles = {
+        'savings': {
+          border: highContrast ? 'border-emerald-400 bg-black' : 'border-emerald-500/40 bg-slate-900',
+          iconBg: highContrast ? 'bg-emerald-400 text-black' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+          btnBg: highContrast ? 'bg-emerald-400 text-black font-extrabold' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/50',
+          badge: 'bg-emerald-950/80 text-emerald-300 border-emerald-700'
+        },
+        'mutual-funds': {
+          border: highContrast ? 'border-teal-400 bg-black' : 'border-teal-500/40 bg-slate-900',
+          iconBg: highContrast ? 'bg-teal-400 text-black' : 'bg-teal-500/20 text-teal-400 border border-teal-500/30',
+          btnBg: highContrast ? 'bg-teal-400 text-black font-extrabold' : 'bg-teal-600 hover:bg-teal-500 text-white shadow-teal-950/50',
+          badge: 'bg-teal-950/80 text-teal-300 border-teal-700'
+        },
+        'demat': {
+          border: highContrast ? 'border-blue-400 bg-black' : 'border-blue-500/40 bg-slate-900',
+          iconBg: highContrast ? 'bg-blue-400 text-black' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+          btnBg: highContrast ? 'bg-blue-400 text-black font-extrabold' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-950/50',
+          badge: 'bg-blue-950/80 text-blue-300 border-blue-700'
+        }
+      };
+
+      const currentTheme = themeStyles[account.id] || themeStyles.savings;
+
+      return (
+        <div className={`group relative rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 border-2 shadow-xl hover:-translate-y-1 ${currentTheme.border}`}>
+          <div>
+            <div className="flex items-start justify-between gap-3 mb-5">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center p-3.5 shadow-md ${currentTheme.iconBg}`}>
+                <Icon name={iconNames[account.id] || 'Landmark'} className="w-9 h-9" />
+              </div>
+              
+              <div className="flex flex-col items-end gap-2">
+                <span className={`text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full border ${
+                  highContrast ? 'bg-yellow-400 text-black border-black font-extrabold' : currentTheme.badge
+                }`}>
+                  {accTrans.badge || account.badge}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => onSpeak(accTrans.voiceText || accTrans.tagline)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer ${
+                    highContrast ? 'bg-yellow-400 text-black' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                  }`}
+                >
+                  <Icon name="Volume2" className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{t.listen}</span>
+                </button>
+              </div>
+            </div>
+
+            <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${
+              highContrast ? 'text-yellow-300' : 'text-emerald-400'
+            }`}>
+              {accTrans.metaphor}
+            </p>
+
+            <h3 className={`text-2xl font-extrabold tracking-tight mb-3 ${
+              highContrast ? 'text-white' : 'text-slate-100 group-hover:text-white'
+            }`}>
+              {accTrans.name || account.name}
+            </h3>
+
+            <p className={`text-sm sm:text-base leading-relaxed mb-6 font-medium ${
+              highContrast ? 'text-yellow-100' : 'text-slate-300'
+            }`}>
+              {accTrans.tagline || account.tagline}
+            </p>
+
+            <div className="space-y-2.5 mb-7">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-200">
+                <Icon name="CheckCircle2" className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>{accTrans.feature1}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-200">
+                <Icon name="CheckCircle2" className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>{accTrans.feature2}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-200">
+                <Icon name="CheckCircle2" className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>{accTrans.feature3}</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onSelect(account.id)}
+            className={`w-full py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-200 cursor-pointer shadow-lg ${currentTheme.btnBg}`}
+          >
+            <span>{accTrans.actionBtn}</span>
+            <Icon name="ArrowRight" className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      );
+    }
+
+    // --- Component: DashboardHome ---
+    function DashboardHome({ accounts, onSelectAccount, translations, onSpeak, stats, highContrast }) {
+      const t = translations;
+      const heroSpeech = `${t.heroTitle}. ${t.heroDesc} ${t.totalMoneyTracked}: ${stats.totalAssetsTracked}.`;
+
+      return (
+        <div className="space-y-10">
+          <section className={`relative overflow-hidden rounded-3xl p-6 sm:p-10 border-2 shadow-2xl ${
+            highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-slate-800'
+          }`}>
+            <div className="relative z-10 max-w-4xl space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className={`inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold ${
+                  highContrast ? 'bg-yellow-400 text-black' : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+                }`}>
+                  <Icon name="Sparkles" className="w-4 h-4" />
+                  <span>{t.heroBadge}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onSpeak(heroSpeech)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md ${
+                    highContrast ? 'bg-yellow-400 text-black' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                  }`}
+                >
+                  <Icon name="Volume2" className="w-4 h-4" />
+                  <span>{t.listenToScreen}</span>
+                </button>
+              </div>
+
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
+                {t.heroTitle}
+              </h1>
+
+              <p className={`text-base sm:text-lg leading-relaxed max-w-3xl font-medium ${
+                highContrast ? 'text-yellow-100' : 'text-slate-300'
+              }`}>
+                {t.heroDesc}
+              </p>
+
+              <div className={`pt-5 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t ${
+                highContrast ? 'border-amber-400' : 'border-slate-800'
+              }`}>
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <p className="text-xs uppercase font-bold text-slate-400">{t.totalMoneyTracked}</p>
+                  <p className="text-xl font-extrabold text-white mt-0.5">{stats.totalAssetsTracked}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <p className="text-xs uppercase font-bold text-slate-400">{t.safeBanks}</p>
+                  <p className="text-xl font-extrabold text-emerald-400 mt-0.5">RBI Connected</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <p className="text-xs uppercase font-bold text-slate-400">{t.voiceSupported}</p>
+                  <p className="text-xl font-extrabold text-cyan-400 mt-0.5">EN • हिं • ಕನ್ನ</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <p className="text-xs uppercase font-bold text-slate-400">Security</p>
+                  <p className="text-xl font-extrabold text-blue-400 mt-0.5">256-Bit TLS</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-6">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {t.categoriesTitle}
+              </h2>
+              <p className="text-slate-300 text-sm sm:text-base mt-1">
+                {t.categoriesSubtitle}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {accounts.map((acc) => (
+                <AccountCard 
+                  key={acc.id} 
+                  account={acc} 
+                  translations={translations}
+                  onSelect={onSelectAccount} 
+                  onSpeak={onSpeak}
+                  highContrast={highContrast}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4">
+            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 flex-shrink-0">
+                <Icon name="Lock" className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-white mb-1">{t.safeStorage}</h4>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  We never save your banking passwords or OTPs. All data stays strictly between you and your bank.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 flex-shrink-0">
+                <Icon name="Volume2" className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-white mb-1">Built-in Voice Assistance</h4>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Click the speaker icon next to any section to hear clear voice explanations in English, Hindi, or Kannada.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 flex-shrink-0">
+                <Icon name="Landmark" className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-white mb-1">RBI & SEBI Certified</h4>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Built on official Indian digital public infrastructure ensuring 100% citizen data sovereignty.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    // --- Component: AccountActionView ---
+    function AccountActionView({ account, translations, onSelectAction, onBack, onSpeak, highContrast }) {
+      const t = translations;
+      const accTrans = t.accounts[account.id] || {};
+      const choiceSpeech = `${accTrans.name}. ${t.actionPromptTitle}. ${t.createTitle}: ${t.createSub}. ${t.loginTitle}: ${t.loginSub}.`;
+
+      return (
+        <div className="space-y-8 animate-fadeIn max-w-5xl mx-auto">
+          <div className={`rounded-3xl p-6 sm:p-8 border-2 shadow-xl ${
+            highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-slate-900 border-slate-800'
+          }`}>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center p-3 flex-shrink-0">
+                  <Icon name={account.id === 'savings' ? 'Landmark' : account.id === 'mutual-funds' ? 'Sprout' : 'Factory'} className="w-8 h-8" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                      {accTrans.metaphor}
+                    </span>
+                    <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      {accTrans.badge}
+                    </span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    {accTrans.name}
+                  </h1>
+                  <p className="text-slate-300 text-sm sm:text-base mt-1 max-w-2xl font-medium">
+                    {accTrans.tagline}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start md:self-center">
+                <button
+                  type="button"
+                  onClick={() => onSpeak(choiceSpeech)}
+                  className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow"
+                >
+                  <Icon name="Volume2" className="w-4 h-4" />
+                  <span>{t.listen}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer"
+                >
+                  <Icon name="ArrowLeft" className="w-4 h-4" />
+                  <span>{t.backToDashboard}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-center max-w-lg mx-auto mb-6">
+              <h2 className="text-2xl font-extrabold text-white">{t.actionPromptTitle}</h2>
+              <p className="text-slate-300 text-sm sm:text-base mt-1 font-medium">
+                {t.actionPromptSubtitle}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Card 1: Create Account */}
+              <div 
+                onClick={() => onSelectAction('create')}
+                className={`group relative rounded-3xl p-7 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 border-2 shadow-2xl ${
+                  highContrast
+                    ? 'bg-black border-emerald-400'
+                    : 'bg-gradient-to-b from-slate-900 to-slate-950 border-emerald-500/40 hover:border-emerald-400'
+                }`}
+              >
+                <div className="space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Icon name="UserPlus" className="w-7 h-7" />
+                  </div>
+
+                  <div>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 text-xs font-bold border border-emerald-700 mb-2">
+                      100% Digital
+                    </span>
+                    <h3 className="text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                      {t.createTitle}
+                    </h3>
+                    <p className="text-slate-300 text-sm sm:text-base leading-relaxed mt-2 font-medium">
+                      {t.createSub}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-800 text-xs text-slate-300 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Icon name="CheckCircle2" className="w-4 h-4 text-emerald-400" />
+                      <span>Only Aadhaar & Mobile required</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Icon name="CheckCircle2" className="w-4 h-4 text-emerald-400" />
+                      <span>Free account opening • Zero fees</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-slate-800 flex items-center justify-between">
+                  <span className="text-sm font-bold text-emerald-400 group-hover:underline">
+                    {t.createBtn}
+                  </span>
+                  <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-md group-hover:translate-x-1 transition-transform">
+                    <Icon name="ArrowRight" className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Login to Account */}
+              <div 
+                onClick={() => onSelectAction('login')}
+                className={`group relative rounded-3xl p-7 flex flex-col justify-between cursor-pointer transition-all duration-300 hover:-translate-y-1 border-2 shadow-2xl ${
+                  highContrast
+                    ? 'bg-black border-blue-400'
+                    : 'bg-gradient-to-b from-slate-900 to-slate-950 border-blue-500/40 hover:border-blue-400'
+                }`}
+              >
+                <div className="space-y-4">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Icon name="LogIn" className="w-7 h-7" />
+                  </div>
+
+                  <div>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-950 text-blue-300 text-xs font-bold border border-blue-700 mb-2">
+                      Instant Link
+                    </span>
+                    <h3 className="text-2xl font-bold text-white group-hover:text-blue-300 transition-colors">
+                      {t.loginTitle}
+                    </h3>
+                    <p className="text-slate-300 text-sm sm:text-base leading-relaxed mt-2 font-medium">
+                      {t.loginSub}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-800 text-xs text-slate-300 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Icon name="CheckCircle2" className="w-4 h-4 text-blue-400" />
+                      <span>Secure Government Aggregator Gateway</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Icon name="CheckCircle2" className="w-4 h-4 text-blue-400" />
+                      <span>Voice summary generated in 1 second</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-slate-800 flex items-center justify-between">
+                  <span className="text-sm font-bold text-blue-400 group-hover:underline">
+                    {t.loginBtn}
+                  </span>
+                  <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md group-hover:translate-x-1 transition-transform">
+                    <Icon name="ArrowRight" className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- Component: AuthFormView ---
+    function AuthFormView({ account, action, translations, onSubmitSuccess, onBack, onSpeak, highContrast }) {
+      const t = translations;
+      const isCreate = action === 'create';
+      const accTrans = t.accounts[account.id] || {};
+
+      const [formData, setFormData] = useState({
+        fullName: 'Chetan Surya',
+        panNumber: 'ABCDE1234F',
+        phone: '9876543210',
+        customerId: 'SBI4928104',
+        pin: '••••',
+        consent: true
+      });
+
+      const [showPassword, setShowPassword] = useState(false);
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [error, setError] = useState('');
+
+      const formSpeech = `${isCreate ? t.digitalOnboarding : t.secureLogin}. ${accTrans.name}. ${t.termsConsent}`;
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!formData.consent) {
+          setError(t.requiredField);
+          return;
+        }
+
+        setIsSubmitting(true);
+        setTimeout(() => {
+          setIsSubmitting(false);
+          onSubmitSuccess({ account, action, formData });
+        }, 1000);
+      };
+
+      return (
+        <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 text-sm font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
+          >
+            <Icon name="ArrowLeft" className="w-4 h-4" />
+            <span>{t.backToDashboard}</span>
+          </button>
+
+          <div className={`rounded-3xl p-6 sm:p-10 border-2 shadow-2xl ${
+            highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-slate-900 border-slate-800'
+          }`}>
+            <div className="border-b border-slate-800 pb-6 mb-6">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
+                  isCreate ? 'bg-emerald-950 text-emerald-400 border-emerald-700' : 'bg-blue-950 text-blue-400 border-blue-700'
+                }`}>
+                  {isCreate ? t.digitalOnboarding : t.secureLogin}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => onSpeak(formSpeech)}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow"
+                >
+                  <Icon name="Volume2" className="w-3.5 h-3.5" />
+                  <span>{t.listen}</span>
+                </button>
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                {accTrans.name}
+              </h2>
+              <p className="text-slate-300 text-sm mt-1 font-medium">
+                {isCreate ? t.createSub : t.loginSub}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+              {isCreate ? (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-bold text-slate-200">
+                      {t.fullName} <span className="text-emerald-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-bold text-slate-200">
+                      {t.panNumber} <span className="text-emerald-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.panNumber}
+                      onChange={(e) => setFormData({ ...formData, panNumber: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium uppercase font-mono focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-bold text-slate-200">
+                      {t.mobileNumber} <span className="text-emerald-400">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-bold text-slate-200">
+                      {t.customerOrFolioId} <span className="text-blue-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.customerId}
+                      onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium focus:ring-2 focus:ring-blue-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-bold text-slate-200">
+                      {t.secretPin} <span className="text-blue-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.pin}
+                        onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
+                        className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-700 text-white font-medium focus:ring-2 focus:ring-blue-400 focus:outline-none pr-12"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                      >
+                        <Icon name={showPassword ? "EyeOff" : "Eye"} className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="pt-2">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.consent}
+                    onChange={(e) => setFormData({ ...formData, consent: e.target.checked })}
+                    className="mt-1 w-5 h-5 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-400 cursor-pointer"
+                  />
+                  <span className="text-sm text-slate-200 font-medium leading-snug">
+                    {t.termsConsent}
+                  </span>
+                </label>
+                {error && (
+                  <p className="text-xs text-rose-400 mt-1.5 flex items-center gap-1 font-bold">
+                    <Icon name="AlertCircle" className="w-3.5 h-3.5" /> {error}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`w-full py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all cursor-pointer shadow-xl ${
+                  isCreate
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-950/60'
+                } ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span>{t.connectingText}</span>
+                  </span>
+                ) : (
+                  <span>{isCreate ? t.submitCreate : t.submitLogin}</span>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // --- Component: AIInsightsPanel ---
+    function AIInsightsPanel({ account, translations, onSpeak, highContrast }) {
+      const t = translations;
+      const [selectedStockTicker, setSelectedStockTicker] = useState('RELIANCE');
+      const stockData = t.dematAI.stocks[selectedStockTicker] || t.dematAI.stocks['RELIANCE'];
+
+      return (
+        <div className={`relative overflow-hidden rounded-3xl p-6 sm:p-8 border-2 shadow-2xl animate-fadeIn ${
+          highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-emerald-500/40 shadow-emerald-950/30'
+        }`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-400 text-slate-950 flex items-center justify-center p-2.5 shadow-lg">
+                <Icon name="Sparkles" className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-extrabold text-white tracking-tight">
+                    {t.tabAiInsights}
+                  </h3>
+                  <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-700">
+                    Voice Enabled
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-300 mt-0.5 font-medium">
+                  {t.appTagline}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (account.id === 'savings') onSpeak(t.savingsAI.balanceSpeech);
+                else if (account.id === 'mutual-funds') onSpeak(`${t.mutualFundsAI.analogyText} ${t.mutualFundsAI.navExplanation}`);
+                else if (account.id === 'demat') onSpeak(`${t.dematAI.varianceGainText}. ${stockData.voiceSummary}`);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer shadow-lg self-start sm:self-center"
+            >
+              <Icon name="Volume2" className="w-4 h-4" />
+              <span>{t.listenToScreen}</span>
+            </button>
+          </div>
+
+          <div className="pt-6 space-y-6">
+            {/* SAVINGS AI SUMMARY */}
+            {account.id === 'savings' && (
+              <div className="space-y-6">
+                <div className="p-5 rounded-2xl bg-emerald-950/60 border-2 border-emerald-500/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-xl shadow-md">
+                      🟢
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black text-white">{t.savingsAI.trafficLightSafe}</h4>
+                      <p className="text-xs sm:text-sm text-emerald-300 font-medium mt-0.5">
+                        {t.savingsAI.trafficLightDesc}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onSpeak(t.savingsAI.balanceSpeech)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-300 text-xs font-bold border border-emerald-700 flex items-center gap-1.5 cursor-pointer self-start sm:self-center"
+                  >
+                    <Icon name="Volume2" className="w-4 h-4" />
+                    <span>{t.listen}</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                    <p className="text-xs uppercase font-bold text-slate-400">{t.savingsAI.balanceCardTitle}</p>
+                    <h3 className="text-3xl sm:text-4xl font-black text-white">₹ 4,32,850.75</h3>
+                    <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs sm:text-sm text-slate-300 font-medium">
+                      {t.savingsAI.balanceComment}
+                    </div>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                    <p className="text-xs uppercase font-bold text-slate-400">{t.savingsAI.recentSpendingTitle}</p>
+                    <div className="p-3 rounded-xl bg-emerald-950/50 border border-emerald-800 text-xs sm:text-sm text-emerald-300 font-semibold flex items-center gap-2">
+                      <Icon name="CheckCircle2" className="w-4 h-4 flex-shrink-0" />
+                      <span>{t.savingsAI.spendingComment}</span>
+                    </div>
+                    <div className="space-y-2 text-xs text-slate-300">
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-900">
+                        <span>Swiggy Food</span>
+                        <span className="font-bold text-white">₹ 640 (Down 12%)</span>
+                      </div>
+                      <div className="flex justify-between p-2 rounded-lg bg-slate-900">
+                        <span>Electricity Bill</span>
+                        <span className="font-bold text-white">₹ 2,450 (Paid)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-base font-extrabold text-white flex items-center gap-2">
+                      <Icon name="ShieldCheck" className="w-5 h-5 text-emerald-400" />
+                      <span>{t.savingsAI.cibilTitle}</span>
+                    </h4>
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-900 text-emerald-300 border border-emerald-700">
+                      {t.savingsAI.cibilScoreDisplay}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-sm sm:text-base text-slate-200 font-medium leading-relaxed">
+                    {t.savingsAI.cibilMeaning}
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs sm:text-sm text-emerald-300 font-medium">
+                    {t.savingsAI.cibilTip}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* MUTUAL FUNDS AI SUMMARY */}
+            {account.id === 'mutual-funds' && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-gradient-to-r from-teal-950/60 via-slate-950 to-emerald-950/60 border-2 border-teal-500/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-black text-white flex items-center gap-2">
+                      <Icon name="Sprout" className="w-5 h-5 text-teal-400" />
+                      <span>{t.mutualFundsAI.growthSummaryTitle}</span>
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => onSpeak(`${t.mutualFundsAI.analogyText} ${t.mutualFundsAI.navExplanation}`)}
+                      className="px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Icon name="Volume2" className="w-3.5 h-3.5" />
+                      <span>{t.listen}</span>
+                    </button>
+                  </div>
+
+                  <p className="text-sm sm:text-base text-slate-200 font-medium leading-relaxed">
+                    {t.mutualFundsAI.analogyText}
+                  </p>
+
+                  <div className="pt-2 flex flex-wrap gap-2 text-xs font-bold text-teal-300">
+                    <span className="px-3 py-1 rounded-lg bg-slate-900 border border-teal-800">
+                      {t.mutualFundsAI.navExplanation}
+                    </span>
+                    <span className="px-3 py-1 rounded-lg bg-slate-900 border border-teal-800">
+                      {t.mutualFundsAI.feeExplanation}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                    <p className="text-xs uppercase font-bold text-slate-400">{t.mutualFundsAI.allocationTitle}</p>
+                    <div className="space-y-2.5">
+                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs sm:text-sm font-bold text-emerald-300 flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+                        <span>{t.mutualFundsAI.allocBig}</span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs sm:text-sm font-bold text-blue-300 flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+                        <span>{t.mutualFundsAI.allocSafe}</span>
+                      </div>
+                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs sm:text-sm font-bold text-purple-300 flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+                        <span>{t.mutualFundsAI.allocFast}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                    <p className="text-xs uppercase font-bold text-slate-400">{t.mutualFundsAI.riskLevelTitle}</p>
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-sm sm:text-base text-slate-200 font-medium">
+                      {t.mutualFundsAI.riskLevelDesc}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* DEMAT AI SUMMARY */}
+            {account.id === 'demat' && (
+              <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-emerald-950/60 border-2 border-emerald-500/60 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-black text-white">{t.dematAI.todayVsYesterdayTitle}</h4>
+                    <p className="text-base sm:text-lg font-extrabold text-emerald-300">
+                      {t.dematAI.varianceGainText}
+                    </p>
+                    <div className="pt-2 flex flex-wrap gap-3 text-xs sm:text-sm font-bold text-slate-300">
+                      <span className="px-3 py-1 rounded-lg bg-slate-900 border border-slate-700">{t.dematAI.todayValuation}</span>
+                      <span className="px-3 py-1 rounded-lg bg-slate-900 border border-slate-700">{t.dematAI.yesterdayValuation}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onSpeak(t.dematAI.varianceGainText)}
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow self-start md:self-center"
+                  >
+                    <Icon name="Volume2" className="w-4 h-4" />
+                    <span>{t.listen}</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-extrabold text-slate-200">
+                    {t.dematAI.clickStockPrompt}
+                  </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {['RELIANCE', 'TCS', 'HDFCBANK', 'INFY'].map(ticker => {
+                      const s = t.dematAI.stocks[ticker];
+                      const isSelected = selectedStockTicker === ticker;
+                      return (
+                        <button
+                          key={ticker}
+                          type="button"
+                          onClick={() => {
+                            setSelectedStockTicker(ticker);
+                            onSpeak(s.voiceSummary);
+                          }}
+                          className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-slate-900 border-emerald-400 ring-2 ring-emerald-400 shadow-xl'
+                              : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          <span className="block font-black text-base text-white">{ticker}</span>
+                          <span className="text-xs font-bold text-emerald-400 mt-1 block">{s.plainTrend}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {stockData && (
+                  <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-extrabold text-lg text-white flex items-center gap-2">
+                        <Icon name="Factory" className="w-5 h-5 text-blue-400" />
+                        <span>{selectedStockTicker}</span>
+                      </h5>
+                      <button
+                        type="button"
+                        onClick={() => onSpeak(stockData.voiceSummary)}
+                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Icon name="Volume2" className="w-4 h-4" />
+                        <span>{t.listen}</span>
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-sm sm:text-base text-slate-200 font-medium leading-relaxed">
+                      {stockData.voiceSummary}
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-400 font-medium">
+                      {stockData.simpleAdvice}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // --- Component: AggregatedSummary ---
+    function AggregatedSummary({ account, action, translations, onReturnHome, onSpeak, highContrast }) {
+      const t = translations;
+      const portfolio = account.mockPortfolio;
+      const accTrans = t.accounts[account.id] || {};
+      const [activeTab, setActiveTab] = useState('insights');
+
+      return (
+        <div className="space-y-8 animate-fadeIn max-w-5xl mx-auto">
+          <div className="p-5 rounded-3xl bg-emerald-950/60 border-2 border-emerald-500/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center flex-shrink-0">
+                <Icon name="CheckCircle2" className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-white">
+                  {t.syncSuccess}
+                </h3>
+                <p className="text-xs sm:text-sm text-emerald-300 font-medium">
+                  {t.syncSuccessMsg}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onReturnHome}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 transition-colors cursor-pointer"
+            >
+              {t.home}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className={`p-6 rounded-3xl border-2 shadow-lg flex flex-col justify-between ${
+              highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-slate-900 border-slate-800'
+            }`}>
+              <div>
+                <p className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                  {accTrans.shortName} Total
+                </p>
+                <h2 className="text-3xl sm:text-4xl font-black text-white mt-1">
+                  {portfolio.accountBalance}
+                </h2>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs font-bold">
+                <span className="text-emerald-400">{portfolio.change24h}</span>
+                <span className="text-slate-400">100% Safe</span>
+              </div>
+            </div>
+
+            <div className={`p-6 rounded-3xl border-2 shadow-lg flex flex-col justify-between ${
+              highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-slate-900 border-slate-800'
+            }`}>
+              <div>
+                <p className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                  Linked Institutions
+                </p>
+                <div className="mt-2 space-y-1">
+                  {portfolio.linkedInstitutions.map((inst, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                      <span>{inst}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 pt-3 border-t border-slate-800 text-xs font-bold text-emerald-400">
+                {t.consentActive}
+              </div>
+            </div>
+
+            <div className={`p-6 rounded-3xl border-2 shadow-lg flex flex-col justify-between ${
+              highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-slate-900 border-slate-800'
+            }`}>
+              <div>
+                <p className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                  Easy Statement
+                </p>
+                <p className="text-xs text-slate-300 mt-2 font-medium">
+                  Save a simple one-page summary on your phone or print it for your family.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => alert("Statement downloaded in " + t.langName)}
+                className="mt-4 w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Icon name="Download" className="w-4 h-4" />
+                <span>{t.downloadPdf}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab('insights')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold transition-all cursor-pointer ${
+                activeTab === 'insights'
+                  ? 'bg-emerald-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Icon name="Sparkles" className="w-4 h-4" />
+              <span>{t.tabAiInsights}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('holdings')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold transition-all cursor-pointer ${
+                activeTab === 'holdings'
+                  ? 'bg-slate-800 text-white border border-slate-700'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Icon name="Layers" className="w-4 h-4" />
+              <span>{t.tabHoldings}</span>
+            </button>
+          </div>
+
+          {activeTab === 'insights' && (
+            <AIInsightsPanel 
+              account={account} 
+              translations={translations}
+              onSpeak={onSpeak}
+              highContrast={highContrast}
+            />
+          )}
+
+          {activeTab === 'holdings' && (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl animate-fadeIn">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="text-xs uppercase text-slate-400 bg-slate-950/60 border-y border-slate-800 font-bold">
+                    <tr>
+                      <th className="py-3 px-4">Item</th>
+                      <th className="py-3 px-4">Units</th>
+                      <th className="py-3 px-4">Rate</th>
+                      <th className="py-3 px-4">Total Value</th>
+                      <th className="py-3 px-4 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 text-slate-200">
+                    {portfolio.holdings.map((holding, idx) => (
+                      <tr key={idx} className="hover:bg-slate-800/40">
+                        <td className="py-3.5 px-4 font-bold text-white">{holding.name}</td>
+                        <td className="py-3.5 px-4 text-xs font-semibold">{holding.units}</td>
+                        <td className="py-3.5 px-4 text-xs font-semibold">{holding.nav}</td>
+                        <td className="py-3.5 px-4 font-extrabold text-white">{holding.value}</td>
+                        <td className="py-3.5 px-4 text-right font-bold text-emerald-400 text-xs">
+                          {holding.gain}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- Component: Footer ---
+    function Footer({ translations, highContrast }) {
+      const t = translations;
+
+      return (
+        <footer className={`mt-20 border-t py-10 transition-colors ${
+          highContrast ? 'bg-black border-amber-400 text-yellow-300' : 'bg-slate-950/90 border-slate-800/80 text-slate-400'
+        }`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-6 border-b border-slate-800/60 text-xs font-semibold">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                  <Icon name="ShieldCheck" className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-slate-200">{t.rbiCompliant}</p>
+                  <p className="text-slate-400">{t.footerGovt}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                  <Icon name="Lock" className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-slate-200">256-Bit TLS Security</p>
+                  <p className="text-slate-400">{t.footerPrivacy}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+                  <Icon name="Globe" className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-slate-200">Multilingual Voice Support</p>
+                  <p className="text-slate-400">English • हिंदी • ಕನ್ನಡ</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs">
+              <p className="text-slate-400">
+                {t.footerCopyright}
+              </p>
+              <div className="flex items-center gap-4 text-xs font-bold text-emerald-400">
+                <span>{t.networkOnline}</span>
+                <span>•</span>
+                <span>Accessibility Grade AAA</span>
+              </div>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    // --- Root App Container ---
+    function App() {
+      const [currentLang, setCurrentLang] = useState('en');
+      const [highContrast, setHighContrast] = useState(false);
+      const [largeText, setLargeText] = useState(false);
+
+      const [route, setRoute] = useState({
+        view: 'home',
+        accountId: null,
+        action: null
+      });
+
+      const [lastSubmission, setLastSubmission] = useState(null);
+      const t = TRANSLATIONS[currentLang] || TRANSLATIONS['en'];
+      const { speak, stop, isSpeaking } = useTTS(currentLang);
+
+      const handleNavigate = (targetRoute) => {
+        stop();
+        setRoute(targetRoute);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleSelectAccount = (accountId) => {
+        stop();
+        setRoute({
+          view: 'account',
+          accountId: accountId,
+          action: null
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleSelectAction = (action) => {
+        stop();
+        setRoute(prev => ({
+          ...prev,
+          view: 'auth',
+          action: action
+        }));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleFormSubmitSuccess = (submissionData) => {
+        stop();
+        setLastSubmission(submissionData);
+        setRoute(prev => ({
+          ...prev,
+          view: 'summary'
+        }));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleResetToHome = () => {
+        stop();
+        setRoute({
+          view: 'home',
+          accountId: null,
+          action: null
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const handleTriggerGlobalTTS = () => {
+        if (route.view === 'home') {
+          speak(`${t.heroTitle}. ${t.heroDesc}`);
+        } else if (route.view === 'account' && route.accountId) {
+          const acc = t.accounts[route.accountId];
+          speak(`${acc.name}. ${acc.tagline}. ${t.actionPromptTitle}.`);
+        } else if (route.view === 'auth') {
+          speak(`${route.action === 'create' ? t.createTitle : t.loginTitle}. ${t.termsConsent}`);
+        } else if (route.view === 'summary') {
+          if (route.accountId === 'savings') speak(t.savingsAI.balanceSpeech);
+          else if (route.accountId === 'mutual-funds') speak(`${t.mutualFundsAI.analogyText} ${t.mutualFundsAI.navExplanation}`);
+          else if (route.accountId === 'demat') speak(t.dematAI.varianceGainText);
+        }
+      };
+
+      const currentAccountConfig = ACCOUNT_TYPES.find(acc => acc.id === route.accountId) || null;
+
+      return (
+        <div className={`min-h-screen flex flex-col font-sans transition-colors ${
+          highContrast ? 'bg-black text-yellow-300' : 'bg-slate-950 text-slate-100'
+        } ${largeText ? 'text-lg' : 'text-base'}`}>
+          
+          <Navbar 
+            currentLang={currentLang}
+            onSelectLang={(lang) => {
+              stop();
+              setCurrentLang(lang);
+            }}
+            translations={t}
+            highContrast={highContrast}
+            onToggleContrast={() => setHighContrast(!highContrast)}
+            largeText={largeText}
+            onToggleLargeText={() => setLargeText(!largeText)}
+            isSpeaking={isSpeaking}
+            onTriggerGlobalTTS={handleTriggerGlobalTTS}
+            onStopTTS={stop}
+            onReset={handleResetToHome}
+          />
+
+          <Breadcrumbs 
+            route={route} 
+            accountId={route.accountId}
+            translations={t}
+            onNavigate={handleNavigate}
+            onSpeak={speak}
+            highContrast={highContrast}
+          />
+
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8">
+            {route.view === 'home' && (
+              <DashboardHome 
+                accounts={ACCOUNT_TYPES} 
+                translations={t}
+                onSelectAccount={handleSelectAccount} 
+                onSpeak={speak}
+                stats={SYSTEM_STATS}
+                highContrast={highContrast}
+              />
+            )}
+
+            {route.view === 'account' && currentAccountConfig && (
+              <AccountActionView 
+                account={currentAccountConfig}
+                translations={t}
+                onSelectAction={handleSelectAction}
+                onBack={handleResetToHome}
+                onSpeak={speak}
+                highContrast={highContrast}
+              />
+            )}
+
+            {route.view === 'auth' && currentAccountConfig && route.action && (
+              <AuthFormView 
+                account={currentAccountConfig}
+                action={route.action}
+                translations={t}
+                onSubmitSuccess={handleFormSubmitSuccess}
+                onBack={() => setRoute({ view: 'account', accountId: route.accountId, action: null })}
+                onSpeak={speak}
+                highContrast={highContrast}
+              />
+            )}
+
+            {route.view === 'summary' && currentAccountConfig && (
+              <AggregatedSummary 
+                account={currentAccountConfig}
+                action={route.action || 'login'}
+                translations={t}
+                onReturnHome={handleResetToHome}
+                onSpeak={speak}
+                highContrast={highContrast}
+              />
+            )}
+          </main>
+
+          <Footer 
+            translations={t}
+            highContrast={highContrast}
+          />
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
