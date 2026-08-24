@@ -54,18 +54,7 @@ fincentral/
 
 ---
 
-## 🚀 How to Run
 
-### Option 1: Instant Browser View (Recommended)
-Simply open `C:\Users\Chetan Surya N\.gemini\antigravity\scratch\fincentral\index.html` in your web browser (or double-click the file in File Explorer).
-
-### Option 2: Run via Any Local HTTP Server
-```powershell
-# In PowerShell:
-Start-Process "C:\Users\Chetan Surya N\.gemini\antigravity\scratch\fincentral\index.html"
-```
-
----
 
 ## 🔌 How to Add New Account Types (Scalability)
 
