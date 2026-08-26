@@ -21,7 +21,7 @@ const writeDb = (db) => fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
+app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: true, legacyHeaders: false }));
 
