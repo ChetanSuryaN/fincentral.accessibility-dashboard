@@ -22,8 +22,9 @@ In a world full of over-complicated trading apps, FinCentral shifts the role of 
    Icon Engine: Lucide React Assets 
    Audio Synthesis: Native Browser Web Speech Module  
    Cloud Infrastructure: Vercel Global Edge Network  
-
-   🎥Demo Video : https://drive.google.com/file/d/1wR2gvnJqt2O9FO7hk278Cgq6vs_-8A8r/view?usp=drivesdk
+   
+🔗Project url:
+🎥Demo Video : https://drive.google.com/file/d/1wR2gvnJqt2O9FO7hk278Cgq6vs_-8A8r/view?usp=drivesdk
 
 🏆 Technical Foundation & Leverage (Developer Profile)
 💻 Problem-Solving Depth: Built by a 3rd-semester UVCE student with 280+ LeetCode problems solved 
