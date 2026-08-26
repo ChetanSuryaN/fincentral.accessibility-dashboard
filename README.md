@@ -23,7 +23,7 @@ In a world full of over-complicated trading apps, FinCentral shifts the role of 
    Audio Synthesis: Native Browser Web Speech Module  
    Cloud Infrastructure: Vercel Global Edge Network  
    
-🔗Project url: https://fincentralaccessibility-dashboard.vercel.app/
+🔗Project url: https://fincentralaccessibility-dashboard.vercel.app/                                              
 🎥Demo Video : https://drive.google.com/file/d/1wR2gvnJqt2O9FO7hk278Cgq6vs_-8A8r/view?usp=drivesdk
 
 🏆 Technical Foundation & Leverage (Developer Profile)            
